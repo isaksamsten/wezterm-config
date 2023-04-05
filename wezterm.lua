@@ -9,21 +9,16 @@ wezterm.on("update-right-status", function(window, pane)
 	local icon = icons_map[name]
 	window:set_right_status(icon or name or "")
 end)
--- wezterm.on("update-right-status", function(window, pane)
--- 	local meta = pane:get_metadata() or {}
--- 	if meta.is_tardy then
--- 		local secs = meta.since_last_response_ms / 1000.0
--- 		window:set_right_status(string.format("⏳%5.1fs", secs))
--- 	end
--- end)
 
-return {
+local copy_mode = wezterm.gui.default_key_tables().copy_mode
+local search_mode = wezterm.gui.default_key_tables().search_mode
+local config = {
 	term = "wezterm",
 	window_decorations = "RESIZE | INTEGRATED_BUTTONS",
 	-- ->
 	font = wezterm.font_with_fallback({
 		-- { family = "SF Mono", stretch = "Condensed" },
-		{ family = "Jetbrains Mono NL", stretch = "Condensed" },
+		{ family = "Jetbrains Mono NL", stretch = "Condensed", weight = "Regular" },
 		{ family = "Menlo", stretch = "Condensed" },
 		-- { family = "Iosevka", stretch = "Normal", weight = "Regular", harfbuzz_features = { "ss04", "calt=0" } },
 		{ family = "Symbols Nerd Font", scale = 1.0, italic = false },
@@ -87,14 +82,20 @@ return {
 		top = 4,
 		bottom = 4,
 	},
-	ssh_domains = {
+	unix_domains = {
 		{
-			name = "samsten",
-			remote_address = "samsten.se",
-			-- local_echo_threshold_ms = 50,
-			username = "isak",
+			name = "unix",
 		},
 	},
+	-- ssh_domains = {
+	-- 	{
+	-- 		name = "samsten",
+	-- 		remote_address = "samsten.se",
+	-- 		-- local_echo_threshold_ms = 50,
+	-- 		username = "isak",
+	-- 	},
+	-- },
+
 	disable_default_key_bindings = true,
 	keys = {
 		{ key = "L", mods = "SUPER", action = wezterm.action.ShowDebugOverlay },
@@ -141,7 +142,7 @@ return {
 
 		{ key = "c", mods = "SUPER", action = act.CopyTo("Clipboard") },
 		{ key = "v", mods = "SUPER", action = act.PasteFrom("Clipboard") },
-		{ key = "x", mods = "SUPER", action = act.ActivateCopyMode },
+		{ key = "C", mods = "SUPER", action = act.ActivateCopyMode },
 
 		{ key = "/", mods = "SUPER", action = act.Search("CurrentSelectionOrEmptyString") },
 
@@ -163,6 +164,15 @@ return {
 		{ key = "k", mods = "SUPER", action = act.ActivatePaneDirection("Up") },
 		{ key = "DownArrow", mods = "SUPER", action = act.ActivatePaneDirection("Down") },
 		{ key = "j", mods = "SUPER", action = act.ActivatePaneDirection("Down") },
+
+		{ key = "LeftArrow", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Left", 1 }) },
+		{ key = "h", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Left", 1 }) },
+		{ key = "RightArrow", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Right", 1 }) },
+		{ key = "l", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Right", 1 }) },
+		{ key = "UpArrow", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Up", 1 }) },
+		{ key = "k", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Up", 1 }) },
+		{ key = "DownArrow", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Down", 1 }) },
+		{ key = "j", mods = "ALT|SUPER", action = act.AdjustPaneSize({ "Down", 1 }) },
 		{
 			key = "s",
 			mods = "SUPER",
@@ -176,8 +186,23 @@ return {
 			}),
 		},
 
+		{
+			key = "X",
+			mods = "SUPER|SHIFT",
+			action = act.DetachDomain("CurrentPaneDomain"),
+		},
+
+		{
+			key = "F",
+			mods = "SHIFT|CTRL",
+			action = wezterm.action.Search("CurrentSelectionOrEmptyString"),
+		},
+
 		{ key = "Copy", mods = "NONE", action = act.CopyTo("Clipboard") },
 		{ key = "Paste", mods = "NONE", action = act.PasteFrom("Clipboard") },
+
+		{ key = "UpArrow", mods = "CTRL|SHIFT", action = act.ScrollToPrompt(-1) },
+		{ key = "DownArrow", mods = "CTRL|SHIFT", action = act.ScrollToPrompt(1) },
 	},
 
 	key_tables = {
@@ -207,81 +232,14 @@ return {
 			{ key = "Escape", action = "PopKeyTable" },
 		},
 
-		copy_mode = {
-			{ key = "Tab", mods = "NONE", action = act.CopyMode("MoveForwardWord") },
-			{ key = "Tab", mods = "SHIFT", action = act.CopyMode("MoveBackwardWord") },
-			{ key = "Enter", mods = "NONE", action = act.CopyMode("MoveToStartOfNextLine") },
-			{ key = "Escape", mods = "NONE", action = act.CopyMode("Close") },
-			{ key = "Space", mods = "NONE", action = act.CopyMode({ SetSelectionMode = "Cell" }) },
-			{ key = "$", mods = "NONE", action = act.CopyMode("MoveToEndOfLineContent") },
-			{ key = "$", mods = "SHIFT", action = act.CopyMode("MoveToEndOfLineContent") },
-			{ key = ",", mods = "NONE", action = act.CopyMode("JumpReverse") },
-			{ key = "0", mods = "NONE", action = act.CopyMode("MoveToStartOfLine") },
-			{ key = ";", mods = "NONE", action = act.CopyMode("JumpAgain") },
-			{ key = "F", mods = "NONE", action = act.CopyMode({ JumpBackward = { prev_char = false } }) },
-			{ key = "F", mods = "SHIFT", action = act.CopyMode({ JumpBackward = { prev_char = false } }) },
-			{ key = "G", mods = "NONE", action = act.CopyMode("MoveToScrollbackBottom") },
-			{ key = "G", mods = "SHIFT", action = act.CopyMode("MoveToScrollbackBottom") },
-			{ key = "H", mods = "NONE", action = act.CopyMode("MoveToViewportTop") },
-			{ key = "H", mods = "SHIFT", action = act.CopyMode("MoveToViewportTop") },
-			{ key = "L", mods = "NONE", action = act.CopyMode("MoveToViewportBottom") },
-			{ key = "L", mods = "SHIFT", action = act.CopyMode("MoveToViewportBottom") },
-			{ key = "M", mods = "NONE", action = act.CopyMode("MoveToViewportMiddle") },
-			{ key = "M", mods = "SHIFT", action = act.CopyMode("MoveToViewportMiddle") },
-			{ key = "O", mods = "NONE", action = act.CopyMode("MoveToSelectionOtherEndHoriz") },
-			{ key = "O", mods = "SHIFT", action = act.CopyMode("MoveToSelectionOtherEndHoriz") },
-			{ key = "T", mods = "NONE", action = act.CopyMode({ JumpBackward = { prev_char = true } }) },
-			{ key = "T", mods = "SHIFT", action = act.CopyMode({ JumpBackward = { prev_char = true } }) },
-			{ key = "V", mods = "NONE", action = act.CopyMode({ SetSelectionMode = "Line" }) },
-			{ key = "V", mods = "SHIFT", action = act.CopyMode({ SetSelectionMode = "Line" }) },
-			{ key = "^", mods = "NONE", action = act.CopyMode("MoveToStartOfLineContent") },
-			{ key = "^", mods = "SHIFT", action = act.CopyMode("MoveToStartOfLineContent") },
-			{ key = "b", mods = "NONE", action = act.CopyMode("MoveBackwardWord") },
-			{ key = "b", mods = "ALT", action = act.CopyMode("MoveBackwardWord") },
-			{ key = "b", mods = "CTRL", action = act.CopyMode("PageUp") },
-			{ key = "c", mods = "CTRL", action = act.CopyMode("Close") },
-			{ key = "f", mods = "NONE", action = act.CopyMode({ JumpForward = { prev_char = false } }) },
-			{ key = "f", mods = "ALT", action = act.CopyMode("MoveForwardWord") },
-			{ key = "f", mods = "CTRL", action = act.CopyMode("PageDown") },
-			{ key = "g", mods = "NONE", action = act.CopyMode("MoveToScrollbackTop") },
-			{ key = "g", mods = "CTRL", action = act.CopyMode("Close") },
-			{ key = "h", mods = "NONE", action = act.CopyMode("MoveLeft") },
-			{ key = "j", mods = "NONE", action = act.CopyMode("MoveDown") },
-			{ key = "k", mods = "NONE", action = act.CopyMode("MoveUp") },
-			{ key = "l", mods = "NONE", action = act.CopyMode("MoveRight") },
-			{ key = "m", mods = "ALT", action = act.CopyMode("MoveToStartOfLineContent") },
-			{ key = "o", mods = "NONE", action = act.CopyMode("MoveToSelectionOtherEnd") },
-			{ key = "q", mods = "NONE", action = act.CopyMode("Close") },
-			{ key = "t", mods = "NONE", action = act.CopyMode({ JumpForward = { prev_char = true } }) },
-			{ key = "v", mods = "NONE", action = act.CopyMode({ SetSelectionMode = "Cell" }) },
-			{ key = "v", mods = "CTRL", action = act.CopyMode({ SetSelectionMode = "Block" }) },
-			{ key = "w", mods = "NONE", action = act.CopyMode("MoveForwardWord") },
-			{
-				key = "y",
-				mods = "NONE",
-				action = act.Multiple({ { CopyTo = "ClipboardAndPrimarySelection" }, { CopyMode = "Close" } }),
-			},
-			{ key = "PageUp", mods = "NONE", action = act.CopyMode("PageUp") },
-			{ key = "PageDown", mods = "NONE", action = act.CopyMode("PageDown") },
-			{ key = "LeftArrow", mods = "NONE", action = act.CopyMode("MoveLeft") },
-			{ key = "LeftArrow", mods = "ALT", action = act.CopyMode("MoveBackwardWord") },
-			{ key = "RightArrow", mods = "NONE", action = act.CopyMode("MoveRight") },
-			{ key = "RightArrow", mods = "ALT", action = act.CopyMode("MoveForwardWord") },
-			{ key = "UpArrow", mods = "NONE", action = act.CopyMode("MoveUp") },
-			{ key = "DownArrow", mods = "NONE", action = act.CopyMode("MoveDown") },
-		},
-
-		search_mode = {
-			{ key = "Enter", mods = "NONE", action = act.CopyMode("PriorMatch") },
-			{ key = "Escape", mods = "NONE", action = act.CopyMode("Close") },
-			{ key = "n", mods = "CTRL", action = act.CopyMode("NextMatch") },
-			{ key = "p", mods = "CTRL", action = act.CopyMode("PriorMatch") },
-			{ key = "r", mods = "CTRL", action = act.CopyMode("CycleMatchType") },
-			{ key = "u", mods = "CTRL", action = act.CopyMode("ClearPattern") },
-			{ key = "PageUp", mods = "NONE", action = act.CopyMode("PriorMatchPage") },
-			{ key = "PageDown", mods = "NONE", action = act.CopyMode("NextMatchPage") },
-			{ key = "UpArrow", mods = "NONE", action = act.CopyMode("PriorMatch") },
-			{ key = "DownArrow", mods = "NONE", action = act.CopyMode("NextMatch") },
-		},
+		copy_mode = copy_mode,
+		search_mode = search_mode,
 	},
 }
+config.ssh_domains = wezterm.default_ssh_domains()
+for _, dom in ipairs(config.ssh_domains) do
+	dom.assume_shell = "Posix"
+	dom.name = string.gsub(dom.name, "SSHMUX:", "mux:")
+	dom.name = string.gsub(dom.name, "SSH:", "ssh:")
+end
+return config
