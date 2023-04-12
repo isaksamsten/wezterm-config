@@ -1,13 +1,31 @@
 local wezterm = require("wezterm")
 local act = wezterm.action
 local icons_map = {
-	tardy = " ",
-	resize_pane = "  ",
+	copy_mode = "  ",
+	search_mode = "  ",
 }
+
+local gui_colors = {
+	DarkBackground = "#232328",
+	DarkForeground = "#abb2bf",
+	LightBackground = "#282c34",
+	LightForeground = "#c8cdd5",
+}
+
 wezterm.on("update-right-status", function(window, pane)
 	local name = window:active_key_table()
-	local icon = icons_map[name]
-	window:set_right_status(icon or name or "")
+	local message = icons_map[name] or name
+	local bg = gui_colors.DarkBackground
+	local fg = gui_colors.DarkForeground
+	if message then
+		window:set_right_status(wezterm.format({
+			{ Background = { Color = bg } },
+			{ Foreground = { Color = fg } },
+			{ Text = message },
+		}))
+	else
+		window:set_right_status("")
+	end
 end)
 
 local copy_mode = wezterm.gui.default_key_tables().copy_mode
@@ -17,11 +35,11 @@ local config = {
 	window_decorations = "RESIZE | INTEGRATED_BUTTONS",
 	-- ->
 	font = wezterm.font_with_fallback({
-		-- { family = "SF Mono", stretch = "Condensed" },
+		-- { family = "SF Mono", stretch = "Condensed", weight = "Medium" },
 		{ family = "Jetbrains Mono NL", stretch = "Condensed", weight = "Regular" },
-		{ family = "Menlo", stretch = "Condensed" },
+		-- { family = "Menlo" },
 		-- { family = "Iosevka", stretch = "Normal", weight = "Regular", harfbuzz_features = { "ss04", "calt=0" } },
-		{ family = "Symbols Nerd Font", scale = 1.0, italic = false },
+		-- { family = "Symbols Nerd Font Mono", scale = 1.0 },
 	}),
 	front_end = "WebGpu",
 	font_size = 13,
@@ -30,49 +48,44 @@ local config = {
 	allow_square_glyphs_to_overflow_width = "WhenFollowedBySpace",
 	color_scheme = "OneDark (base16)",
 	bold_brightens_ansi_colors = true,
-	adjust_window_size_when_changing_font_size = false,
+	adjust_window_size_when_changing_font_size = true,
 	show_tab_index_in_tab_bar = false,
 	command_palette_font_size = 13,
 	window_frame = {
 		font = wezterm.font_with_fallback({
 			{ family = "SF Pro" },
-			{ family = "Symbols Nerd Font", scale = 1.4, italic = false },
 		}),
 		font_size = 13,
 
-		inactive_titlebar_bg = "#232328",
-		active_titlebar_bg = "#232328",
-		inactive_titlebar_fg = "#cccccc",
-		active_titlebar_fg = "#ffffff",
-		inactive_titlebar_border_bottom = "#2b2042",
-		active_titlebar_border_bottom = "#2b2042",
-		button_fg = "#cccccc",
-		button_bg = "#2b2042",
-		button_hover_fg = "#ffffff",
-		button_hover_bg = "#3b3052",
+		inactive_titlebar_bg = gui_colors.DarkBackground,
+		inactive_titlebar_fg = gui_colors.DarkForeground,
+		active_titlebar_bg = gui_colors.DarkBackground,
+		active_titlebar_fg = gui_colors.DarkForeground,
+		-- inactive_titlebar_border_bottom = "purple",
+		-- active_titlebar_border_bottom = "purple",
 	},
 	colors = {
 		tab_bar = {
-			inactive_tab_edge = "#232328",
+			inactive_tab_edge = gui_colors.DarkBackground,
 			active_tab = {
-				bg_color = "#282c34",
-				fg_color = "#c8cdd5",
+				bg_color = gui_colors.LightBackground,
+				fg_color = gui_colors.LightForeground,
 			},
 			inactive_tab = {
-				bg_color = "#232328",
-				fg_color = "#abb2bf",
+				bg_color = gui_colors.DarkBackground,
+				fg_color = gui_colors.DarkForeground,
 			},
 			inactive_tab_hover = {
-				bg_color = "#232328",
-				fg_color = "#cdd6f4",
+				bg_color = gui_colors.DarkBackground,
+				fg_color = gui_colors.LightForeground,
 			},
 			new_tab = {
-				bg_color = "#232328",
-				fg_color = "#abb2bf",
+				bg_color = gui_colors.DarkBackground,
+				fg_color = gui_colors.DarkForeground,
 			},
 			new_tab_hover = {
-				bg_color = "#232328",
-				fg_color = "#c8cdd5",
+				bg_color = gui_colors.DarkBackground,
+				fg_color = gui_colors.LightForeground,
 			},
 		},
 	},
@@ -103,20 +116,13 @@ local config = {
 		{ key = "D", mods = "SUPER", action = act.SplitVertical({ domain = "CurrentPaneDomain" }) },
 		{ key = "w", mods = "SUPER", action = act.CloseCurrentPane({ confirm = true }) },
 		{ key = "W", mods = "SUPER", action = act.CloseCurrentTab({ confirm = true }) },
-		{
-			key = "r",
-			mods = "SUPER",
-			action = act.ActivateKeyTable({
-				name = "resize_pane",
-				one_shot = false,
-			}),
-		},
 
 		{
 			key = "P",
 			mods = "SUPER",
 			action = wezterm.action.ActivateCommandPalette,
 		},
+
 		{ key = "}", mods = "SUPER", action = act.ActivateTabRelative(1) },
 		{ key = "{", mods = "SUPER", action = act.ActivateTabRelative(-1) },
 		{ key = "]", mods = "SUPER", action = act.ActivatePaneDirection("Next") },
@@ -206,32 +212,6 @@ local config = {
 	},
 
 	key_tables = {
-
-		resize_pane = {
-			{ key = "LeftArrow", action = act.AdjustPaneSize({ "Left", 1 }) },
-			{ key = "LeftArrow", mods = "SHIFT", action = act.AdjustPaneSize({ "Left", 5 }) },
-			{ key = "h", action = act.AdjustPaneSize({ "Left", 1 }) },
-			{ key = "H", action = act.AdjustPaneSize({ "Left", 5 }) },
-
-			{ key = "RightArrow", action = act.AdjustPaneSize({ "Right", 1 }) },
-			{ key = "RightArrow", mods = "SHIFT", action = act.AdjustPaneSize({ "Right", 5 }) },
-			{ key = "l", action = act.AdjustPaneSize({ "Right", 1 }) },
-			{ key = "L", action = act.AdjustPaneSize({ "Right", 5 }) },
-
-			{ key = "UpArrow", action = act.AdjustPaneSize({ "Up", 1 }) },
-			{ key = "UpArrow", mods = "SHIFT", action = act.AdjustPaneSize({ "Up", 5 }) },
-			{ key = "k", action = act.AdjustPaneSize({ "Up", 1 }) },
-			{ key = "K", action = act.AdjustPaneSize({ "Up", 5 }) },
-
-			{ key = "DownArrow", action = act.AdjustPaneSize({ "Down", 1 }) },
-			{ key = "DownArrow", mods = "SHIFT", action = act.AdjustPaneSize({ "Down", 5 }) },
-			{ key = "j", action = act.AdjustPaneSize({ "Down", 1 }) },
-			{ key = "J", action = act.AdjustPaneSize({ "Down", 5 }) },
-
-			-- Cancel the mode by pressing escape
-			{ key = "Escape", action = "PopKeyTable" },
-		},
-
 		copy_mode = copy_mode,
 		search_mode = search_mode,
 	},
