@@ -6,11 +6,81 @@ local icons_map = {
 }
 
 local gui_colors = {
-	DarkBackground = "#232328",
-	DarkForeground = "#abb2bf",
-	LightBackground = "#282c34",
-	LightForeground = "#c8cdd5",
+	DarkBackground = "#24273A",
+	DarkForeground = "#C6D0F5",
+	LightBackground = "#24273A",
+	LightForeground = "#EFF1F5",
 }
+
+local function scheme_for_appearance(appearance)
+	if appearance:find("Dark") then
+		return "Catppuccin Macchiato"
+	else
+		return "Catppuccin Latte"
+	end
+end
+
+local function get_window_colors_for_scheme(appearance)
+	if appearance:find("Dark") then
+		return {
+			DarkBackground = "#24273A",
+			DarkForeground = "#8087a2",
+			LightBackground = "#24273A",
+			LightForeground = "#C6D0F5",
+		}
+	else
+		return {
+			DarkBackground = "#EFF1F5",
+			DarkForeground = "#8c8fa1",
+			LightBackground = "#EFF1F5",
+			LightForeground = "#4C4F69",
+		}
+	end
+end
+
+wezterm.on("window-config-reloaded", function(window, pane)
+	local overrides = window:get_config_overrides() or {}
+	local appearance = window:get_appearance()
+	local scheme = scheme_for_appearance(appearance)
+	if overrides.color_scheme ~= scheme then
+		local colors = get_window_colors_for_scheme(appearance)
+
+		overrides.window_frame = {
+			inactive_titlebar_bg = colors.DarkBackground,
+			inactive_titlebar_fg = colors.DarkForeground,
+			active_titlebar_bg = colors.DarkBackground,
+			active_titlebar_fg = colors.DarkForeground,
+		}
+		overrides.colors = {
+			tab_bar = {
+				inactive_tab_edge = colors.DarkBackground,
+				active_tab = {
+					bg_color = colors.LightBackground,
+					fg_color = colors.LightForeground,
+				},
+				inactive_tab = {
+					bg_color = colors.DarkBackground,
+					fg_color = colors.DarkForeground,
+				},
+				inactive_tab_hover = {
+					bg_color = colors.DarkBackground,
+					fg_color = colors.LightForeground,
+				},
+				new_tab = {
+					bg_color = colors.DarkBackground,
+					fg_color = colors.DarkForeground,
+				},
+				new_tab_hover = {
+					bg_color = colors.DarkBackground,
+					fg_color = colors.LightForeground,
+				},
+			},
+		}
+
+		overrides.color_scheme = scheme
+		window:set_config_overrides(overrides)
+	end
+end)
 
 wezterm.on("update-right-status", function(window, pane)
 	local name = window:active_key_table()
@@ -39,14 +109,14 @@ local config = {
 		{ family = "Jetbrains Mono NL", stretch = "Condensed", weight = "Regular" },
 		-- { family = "Menlo" },
 		-- { family = "Iosevka", stretch = "Normal", weight = "Regular", harfbuzz_features = { "ss04", "calt=0" } },
-		-- { family = "Symbols Nerd Font Mono", scale = 1.0 },
+		{ family = "Symbols Nerd Font Mono", scale = 1.0 },
 	}),
 	front_end = "WebGpu",
 	font_size = 13,
 	freetype_load_target = "Normal",
 	freetype_render_target = "HorizontalLcd",
 	allow_square_glyphs_to_overflow_width = "WhenFollowedBySpace",
-	color_scheme = "OneDark (base16)",
+	color_scheme = "Catppuccin Macchiato",
 	bold_brightens_ansi_colors = true,
 	adjust_window_size_when_changing_font_size = true,
 	show_tab_index_in_tab_bar = false,
@@ -90,10 +160,10 @@ local config = {
 		},
 	},
 	window_padding = {
-		left = 4,
-		right = 4,
-		top = 4,
-		bottom = 4,
+		left = 0,
+		right = 0,
+		top = 0,
+		bottom = 0,
 	},
 	unix_domains = {
 		{
@@ -128,8 +198,8 @@ local config = {
 		{ key = "]", mods = "SUPER", action = act.ActivatePaneDirection("Next") },
 		{ key = "[", mods = "SUPER", action = act.ActivatePaneDirection("Prev") },
 		{
-			key = "f",
-			mods = "SUPER",
+			key = "Enter",
+			mods = "SUPER|SHIFT",
 			action = wezterm.action.TogglePaneZoomState,
 		},
 		{ key = "-", mods = "SUPER", action = act.DecreaseFontSize },
